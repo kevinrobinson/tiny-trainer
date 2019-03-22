@@ -2,6 +2,10 @@
   text-align: center;
 }
 
+input, button, textarea {
+  font-size: 24px;
+}
+
 .App-logo {
   animation: App-logo-spin infinite 20s linear;
   height: 40vmin;
@@ -19,15 +23,66 @@
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.App-bar {
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.App-buckets {
+  flex: 1;
+  display: flex;
+}
+
+.App-bucket {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  margin-right: 10px;
+  padding: 10px;
+  background: white;
+  border-right: 1px solid #aaa;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.App-bucket-header {
+  display: flex;
+  flex-direction: row;
+}
+
+.App-bucket-input {
+  flex: 1;
+  padding: 7px;
+}
+
+.App-button {
+  padding: 10px;
+  border: 1px solid #ccc;
+  background: #eee;
+  cursor: pointer;
+}
+
+.App-example-textarea {
+  flex: 1;
+  padding: 7px;
+  border: 1px solid #ccc;
+}
+
+.App-button-train {
+  background: orange;
+  color: white;
+  border: 1px solid darkorange;
+  font-weight: bold;
+}
+
+.App-results {
+  width: 80%;
+  background: #282c34;
+}
+
+.App-result {
+  width: 100%;
+  position: relative;
+  background: white;
+  color: black;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
