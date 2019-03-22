@@ -124,11 +124,11 @@ export default function App() {
             className="App-button"
             style={{color: '#eee', display: 'inline-block'}}
             onClick={() => {
-              if (!window.confirm('This will reset your work.  Clear?')) return;
+              if (!window.confirm('This will drop the dataset.  Clear?')) return;
               setLabels([newLabel()]);
               setExamplesMap({});
             }}>
-            Reset
+            Clear
           </button>
           <button
             className="App-button"
