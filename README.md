@@ -4,7 +4,9 @@ experiment with using the universal sentence encoder and KNN to make a classifie
 ### Demo
 https://tiny-trainer.netlify.com/
 
-![screenshot](docs/screenshot.png)
+![dataset](docs/dataset.png)
+![results](docs/results.png)
+![ingredients](docs/ingredients.png)
 
 ### References
 - https://github.com/tensorflow/tfjs-models/blob/master/universal-sentence-encoder/demo/index.js

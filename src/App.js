@@ -3,8 +3,10 @@ import _ from 'lodash';
 import uuid from 'uuid/v4';
 import chroma from 'chroma-js';
 import './App.css';
+import * as tf from '@tensorflow/tfjs';
 import {loadModel, embeddingsFor} from './encoder';
 import {teach} from './classify';
+import IngredientsLabel from './IngredientsLabel';
 
 
 const demoLabels = [
@@ -42,36 +44,74 @@ export default function App() {
   const [examplesMap, setExamplesMap] = useState(demoExamplesMap);
   const [trainingData, setTrainingData] = useState(null);
   const languageModel = usePromise(loadModel);
+  const [classifier, setClassifier] = useState(null);
   const [results, setResults] = useState(null);
   const [testSentences, setTestSentences] = useState(demoTestSentences);
 
-  // do training and prediction
+  // do training
+  const [isTraining, setIsTraining] = useState(false);
+  const shouldTrainClassifier = (
+    (languageModel !== null) &&
+    (trainingData !== null) &&
+    (classifier === null) &&
+    (!isTraining)
+  );
   useEffect(() => {
-    if (languageModel === null) return;
-    if (trainingData === null) return;
-    if (results !== null) return;
-    teachableExamplesFor(languageModel, trainingData).then(teachableExamples => {
-      console.log('teachableExamples', teachableExamples);
-      const classifier = teach(teachableExamples);
-      console.log('classifier', classifier);
-      Promise.all(testSentences.map(testSentence => {
-        return embeddingsFor(languageModel, [testSentence]).then(embeddings => {
-          return classifier.predictClass(embeddings).then(predictions => {
-            console.log('predictions', predictions, testSentence);
-            return {embeddings, predictions, sentence: testSentence};
-          });
-        });
-      })).then(setResults);
-    });
-  }, [languageModel, trainingData, results]);
+    if (!shouldTrainClassifier) return;
 
+    setIsTraining(true);
+    teachableExamplesFor(languageModel, trainingData)
+      .then(teachableExamples => teach(teachableExamples))
+      .then(setClassifier)
+      // .then(() => console.log('dataset', classifier.getClassifierDataset()))
+      .then(() => setIsTraining(false));
+  }, [isTraining, trainingData, languageModel, classifier]);
+
+  // do prediction
+  const [isPredicting, setIsPredicting] = useState(false);
+  const shouldPredict = (
+    (!isTraining) &&
+    (classifier !== null) &&
+    (results === null) &&
+    (!isPredicting)
+  );
+  useEffect(() => {
+    if (!shouldPredict) return;
+
+    setIsPredicting(true);
+    embeddingsFor(languageModel, testSentences).then(embeddingsT => {
+      // console.log('embeddingsT', embeddingsT);
+      return embeddingsT.array().then(embeddings => {
+        // console.log('embeddings', embeddings);
+        return Promise.all(embeddings.map((embedding, index) => {
+          // console.log('embedding, index', index, embedding);
+          return classifier.predictClass(tf.tensor(embedding)).then(predictions => {
+            const sentence = testSentences[index];
+            // console.log('predictions', sentence, predictions);
+            return {embedding, predictions, sentence};
+          });
+        }));
+      });
+    }).then(setResults).then(() => setIsPredicting(false));
+  }, [isTraining, isPredicting, testSentences, classifier, results]);
+
+  // Some bug here with UI not updating, even though
+  // this is as expected.  React scheduler or browser GPU?
+  // It happens in Safari but noot Chrome, so maybe browser side?
+  const buttonText = isTraining
+    ? 'Training...'
+    : isPredicting
+      ? 'Predicting...'
+      : 'Train';
+  console.log('render', buttonText, {isTraining, isPredicting});
   return (
     <div className="App">
       <header className="App-header">
         <div className="App-bar">
+          <span style={{marginRight: 10}}>Training data</span>
           <button
             className="App-button"
-            style={{color: '#eee'}}
+            style={{color: '#eee', display: 'inline-block'}}
             onClick={() => setLabels(labels.concat(newLabel()))}>
             Add label
           </button>
@@ -92,9 +132,9 @@ export default function App() {
         <div className="App-training">
           <button
             className="App-button App-button-train"
-            disabled={!languageModel}
+            disabled={!languageModel || isTraining || isPredicting}
             onClick={() => setTrainingData({labels, examplesMap})}>
-            {(!trainingData || results) ? 'Train' : 'Training...'}
+            {buttonText}
           </button>
         </div>
         <div className="App-results">
@@ -109,32 +149,33 @@ export default function App() {
             </div>
           ))}
           {(results || []).map(result => (
-            <div className="App-result" key={result.sentence}>
-              <div>{result.sentence}</div>
-              <div style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: 0,
-                top: 0,
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'flex-end'
-              }}>
-                {Object.keys(result.predictions.confidences).map(classIndex => (
-                  <div key={classIndex} style={{
-                    flex: 1,
-                    background: colors[classIndex],
-                    opacity: 0.5,
-                    height: Math.floor(result.predictions.confidences[classIndex]*100) + '%'}}></div>
-                ))}
+            <div key={result.sentence}>
+              <div className="App-result">
+                <div>{result.sentence}</div>
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  top: 0,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'flex-end'
+                }}>
+                  {Object.keys(result.predictions.confidences).map(classIndex => (
+                    <div key={classIndex} style={{
+                      flex: 1,
+                      background: colors[classIndex],
+                      opacity: 0.5,
+                      height: Math.floor(result.predictions.confidences[classIndex]*100) + '%'}}></div>
+                  ))}
+                </div>
               </div>
-              <div style={{color: 'red'}}>
-                <TinyEmbedding embedding={result.embeddings} />
-              </div>
+              <TinyEmbedding embedding={result.embedding} />
             </div>
           ))}
           {/*<pre style={{fontSize: 10}}>{JSON.stringify(results)}</pre>*/}
+          <div className="App-ingredients"><ProjectIngredients /></div>
         </div>
       </header>
     </div>
@@ -256,33 +297,31 @@ function LabelBucket(props) {
 }
 
 function TinyEmbedding({embedding}) {
-  const numbers = embedding.dataSync();
-  console.log('numbers', numbers);
+  const width = 1;
   return (
-    <div style={{
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
-      top: 0,
-      display: 'flex',
-      flexDirection: 'row',
-      alignItems: 'flex-end'
-    }}>
-      {numbers.map((number, index) => {
-        const height = `${Math.floor((0.5+number)*100)}%`;
-        console.log(number, number + 0.5, index, height, Math.floor(number*100));
+    <svg
+      className="App-embedding-svg"
+      width="100%"
+      height={30}
+      preserveAspectRatio="none"
+      viewBox={`0 0 ${embedding.length} 100`}
+    >
+      {embedding.map((number, index) => {
+        // TODO(kr) just guess about why these are negative, need
+        // to learn more, this just assumes they're [-0.5, 0.5]
+        const height = Math.round((0.5+number)*100);
         return (
-          <div key={index} style={{
-            flex: 1,
-            background: 'black',
-            opacity: 0.8,
-            width: `${Math.floor(100 * 1/numbers.length)}%`,
-            height
-          }}>ok</div>
+          <rect
+            className="App-embedding-rect"
+            key={index}
+            x={width * index}
+            y={100 - height}
+            width={width}
+            height={height}
+          />
         );
       })}
-    </div>
+    </svg>
   );
 }
 const colors = [
@@ -299,3 +338,18 @@ const colors = [
   '#ffff99',
   '#b15928'
 ];
+
+
+function ProjectIngredients() {
+  return (
+    <IngredientsLabel
+      dataSets={<div><a target="_blank" rel="noopener noreferrer"  href="https://arxiv.org/abs/1803.11175">Web sources (eg, Wikipedia, news and Q&A sites)</a> by Google</div>}
+      preTrainedModels={<div><a target="_blank" rel="noopener noreferrer" href="https://github.com/tensorflow/tfjs-models/tree/master/universal-sentence-encoder">Universal Sentence Encoder lite</a> by Google</div>}
+      architectures={<div>
+        <div><a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/pdf/1706.03762.pdf">Transformer</a> by Google</div>
+        <div><a target="_blank" rel="noopener noreferrer" href="https://github.com/tensorflow/tfjs-models/tree/master/knn-classifier">KNN Classifier</a> by Google</div>
+      </div>}
+      tunings={<div><a target="_blank" rel="noopener noreferrer" href="https://github.com/kevinrobinson/tiny-trainer">tiny-trainer</a> by <a target="_blank" rel="noopener noreferrer" href="https://github.com/kevinrobinson">Kevin Robinson</a></div>}
+    />
+  );
+}

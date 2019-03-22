@@ -1,0 +1,40 @@
+.IngredientsLabel {
+  border: 4px solid black;
+  padding: 10px;
+  background: white;
+  color: black;
+  font-size: 14px;
+  width: 380px;
+  display: inline-block;
+  text-align: left;
+}
+
+.IngredientsLabel a {
+  color: #999;
+}
+
+.IngredientsLabel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.IngredientsLabel-name {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.IngredientsLabel-section {
+  display: flex;
+  border-top: 2px solid black;
+}
+
+
+.IngredientsLabel-title {
+  font-weight: bold;
+  flex: 2;
+}
+
+.IngredientsLabel-text {
+  flex: 3; 
+}
