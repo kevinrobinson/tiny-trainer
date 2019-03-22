@@ -9,6 +9,7 @@ https://tiny-trainer.netlify.com/
 ### References
 - https://github.com/tensorflow/tfjs-models/blob/master/universal-sentence-encoder/demo/index.js
 - https://github.com/tensorflow/tfjs-models/tree/master/knn-classifier
+- https://machinelearningforkids.co.uk
 
 ### Development
 In the project directory, you can run:
