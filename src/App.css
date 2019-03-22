@@ -50,6 +50,7 @@ input, button, textarea {
 
 .App-bucket-input {
   flex: 1;
+  font-weight: bold;
   padding: 7px;
 }
 
@@ -74,7 +75,7 @@ input, button, textarea {
 }
 
 .App-results {
-  width: 80%;
+  width: 95%;
   background: #282c34;
 }
 
@@ -83,6 +84,7 @@ input, button, textarea {
   position: relative;
   background: white;
   color: black;
+  padding: 10px;
   margin-top: 10px;
   margin-bottom: 10px;
 }

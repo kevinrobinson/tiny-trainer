@@ -24,25 +24,17 @@ const demoExamplesMap = {
   ],
   'c': [
     { id: 'c1', text: "How old are you?" },
-    { id: 'c2', text: "what is your age?" }
+    { id: 'c2', text: "What is your age?" }
   ]
 };
-//   { id: 'b1', text: 'This is a sentence' },
-//     { id: 'b2', text: 'This is truthful.' }
-//   ],
-//   'a2': [
-//     { id: 'c1', text: 'What do you mean?'},
-//     { id: 'c2', text: 'Are you confused?' },
-//     { id: 'c3', text: 'How does this work?' },
-//   ],
-// }
 const demoTestSentences = [
-  'Which one is it?',
-  'You think you can tell.',
-  'But can you?'
+  'Kale and brussels are the best foods.',
+  'Blackberry is better than Android.',
+  'You are too young to make things with computers!'
 ];
 
 // const demoResults = [ { "predictions": { "classIndex": 1, "confidences": { "0": 0, "1": 1 } }, "sentence": "Which one is it?" }, { "predictions": { "classIndex": 1, "confidences": { "0": 0.3333333333333333, "1": 0.6666666666666666 } }, "sentence": "You think you can tell." }, { "predictions": { "classIndex": 1, "confidences": { "0": 0.3333333333333333, "1": 0.6666666666666666 } }, "sentence": "But can you?" } ];
+// const demoResults = [{"predictions":{"classIndex":1,"confidences":{"0":0,"1":1,"2":0}},"sentence":"Kale and brussels are the best foods."},{"predictions":{"classIndex":0,"confidences":{"0":1,"1":0,"2":0}},"sentence":"Blackberry is better than Android."},{"predictions":{"classIndex":2,"confidences":{"0":0.3333333333333333,"1":0,"2":0.6666666666666666}},"sentence":"You are too young to make things with computers!"}];
 
 export default function App() {
   const [labels, setLabels] = useState(demoLabels);
@@ -88,42 +80,42 @@ export default function App() {
           </button>
         </div>
         <div className="App-buckets">
-          <div style={{backgroundColor: 'red'}}>
+          {labels.map(label => (
             <LabelBucket
-              label={labels[0]}
-              labels={labels}
-              setLabels={setLabels}
-              examplesMap={examplesMap}
-              setExamplesMap={setExamplesMap}
-            />
-          </div>
-          <div className="App-results">
-            {(results || []).map(result => (
-              <div className="App-result" key={result.sentence}>
-                <div>{result.sentence}</div>
-                <div style={{top: 0, height: '100%', left: 0, background: 'red', opacity: 0.5, position: 'absolute', width: Math.floor(result.predictions.confidences['0']*100) + '%'}}></div>
-                <div style={{top: 0, height: '100%', right: 0, background: 'blue', opacity: 0.5, position: 'absolute', width: Math.floor(result.predictions.confidences['1']*100) + '%'}}></div>
-              </div>
-            ))}
-          </div>
-          <div style={{backgroundColor: 'blue'}}>
-            <LabelBucket
-              label={labels[1]}
-              labels={labels}
-              setLabels={setLabels}
-              examplesMap={examplesMap}
-              setExamplesMap={setExamplesMap}
-            />
-          </div>
-          {/*labels.map(label => (
-            <LabelBucket
+              key={label.id}
               label={label}
               labels={labels}
               setLabels={setLabels}
               examplesMap={examplesMap}
               setExamplesMap={setExamplesMap}
             />
-          ))*/}
+          ))}
+        </div>
+        <div className="App-results">
+          {(results || []).map(result => (
+            <div className="App-result" key={result.sentence}>
+              <div>{result.sentence}</div>
+              <div style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                top: 0,
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'flex-end'
+              }}>
+                {Object.keys(result.predictions.confidences).map(classIndex => (
+                  <div key={classIndex} style={{
+                    flex: 1,
+                    background: 'blue',
+                    opacity: 0.5,
+                    height: Math.floor(result.predictions.confidences[classIndex]*100) + '%'}}></div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {/*<pre style={{fontSize: 10}}>{JSON.stringify(results)}</pre>*/}
         </div>
       </header>
     </div>
