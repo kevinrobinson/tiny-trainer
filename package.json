@@ -6,6 +6,7 @@
     "@tensorflow-models/knn-classifier": "^1.0.0",
     "@tensorflow-models/universal-sentence-encoder": "^1.0.1",
     "@tensorflow/tfjs": "1.0.0",
+    "chroma-js": "^2.0.3",
     "lodash": "^4.17.11",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",

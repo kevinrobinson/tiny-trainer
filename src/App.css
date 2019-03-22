@@ -24,10 +24,10 @@ input, button, textarea {
 }
 
 .App-bar {
+  color: #f8f8f8;
 }
 
 .App-buckets {
-  flex: 1;
   display: flex;
 }
 
@@ -35,36 +35,49 @@ input, button, textarea {
   margin-top: 20px;
   margin-bottom: 20px;
   margin-right: 10px;
-  padding: 10px;
   background: white;
-  border-right: 1px solid #aaa;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .App-bucket-header {
   display: flex;
   flex-direction: row;
+  padding: 5px;
 }
 
 .App-bucket-input {
   flex: 1;
   font-weight: bold;
-  padding: 7px;
+  padding: 10px;
+  color: #f8f8f8;
+  border: 0;
 }
 
+/* link */
 .App-button {
   padding: 10px;
-  border: 1px solid #ccc;
-  background: #eee;
+  border: none;
+  background: none;
   cursor: pointer;
+  font-weight: bold;
 }
 
 .App-example-textarea {
   flex: 1;
-  padding: 7px;
-  border: 1px solid #ccc;
+  padding: 10px;
+  font-size: 18px;
+  width: 90%;
+  border: 2px solid white;
+  border-radius: 5px;
+  margin-top: 5px;
+  resize: none;
+}
+
+.App-example-textarea:hover {
+  border: 2px solid black;
+  border-radius: 5px;
 }
 
 .App-button-train {
@@ -72,6 +85,20 @@ input, button, textarea {
   color: white;
   border: 1px solid darkorange;
   font-weight: bold;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.App-test-sentence-input {
+  width: 90%;
+  font-size: 18px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 2px solid white;
+}
+.App-test-sentence-input:hover {
+  border: 2px solid black;
+  border-radius: 5px;
 }
 
 .App-results {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import _ from 'lodash';
 import uuid from 'uuid/v4';
+import chroma from 'chroma-js';
 import './App.css';
 import {loadModel, embeddingsFor} from './encoder';
 import {teach} from './classify';
@@ -42,6 +43,7 @@ export default function App() {
   const [trainingData, setTrainingData] = useState(null);
   const languageModel = usePromise(loadModel);
   const [results, setResults] = useState(null);
+  const [testSentences, setTestSentences] = useState(demoTestSentences);
 
   // do training and prediction
   useEffect(() => {
@@ -52,7 +54,7 @@ export default function App() {
       console.log('teachableExamples', teachableExamples);
       const classifier = teach(teachableExamples);
       console.log('classifier', classifier);
-      Promise.all(demoTestSentences.map(testSentence => {
+      Promise.all(testSentences.map(testSentence => {
         return embeddingsFor(languageModel, [testSentence]).then(testEmbeddings => {
           return classifier.predictClass(testEmbeddings).then(predictions => {
             console.log('predictions', predictions, testSentence);
@@ -69,21 +71,17 @@ export default function App() {
         <div className="App-bar">
           <button
             className="App-button"
+            style={{color: '#eee'}}
             onClick={() => setLabels(labels.concat(newLabel()))}>
             Add label
           </button>
-          <button
-            className="App-button App-button-train"
-            disabled={!languageModel}
-            onClick={() => setTrainingData({labels, examplesMap})}>
-            {(!trainingData || results) ? 'Train' : 'Training...'}
-          </button>
         </div>
         <div className="App-buckets">
-          {labels.map(label => (
+          {labels.map((label, labelIndex) => (
             <LabelBucket
               key={label.id}
               label={label}
+              labelIndex={labelIndex}
               labels={labels}
               setLabels={setLabels}
               examplesMap={examplesMap}
@@ -91,7 +89,25 @@ export default function App() {
             />
           ))}
         </div>
+        <div className="App-training">
+          <button
+            className="App-button App-button-train"
+            disabled={!languageModel}
+            onClick={() => setTrainingData({labels, examplesMap})}>
+            {(!trainingData || results) ? 'Train' : 'Training...'}
+          </button>
+        </div>
         <div className="App-results">
+          {!trainingData && testSentences.map((sentence, sentenceIndex) => (
+            <div className="App-sentence" key={sentenceIndex}>
+              <input
+                type="text"
+                className="App-test-sentence-input"
+                onChange={e => setTestSentences(updatedList(testSentences, sentence, e.target.value))}
+                value={sentence}
+              />
+            </div>
+          ))}
           {(results || []).map(result => (
             <div className="App-result" key={result.sentence}>
               <div>{result.sentence}</div>
@@ -108,7 +124,7 @@ export default function App() {
                 {Object.keys(result.predictions.confidences).map(classIndex => (
                   <div key={classIndex} style={{
                     flex: 1,
-                    background: 'blue',
+                    background: colors[classIndex],
                     opacity: 0.5,
                     height: Math.floor(result.predictions.confidences[classIndex]*100) + '%'}}></div>
                 ))}
@@ -134,6 +150,13 @@ function newExample() {
     id: uuid(),
     text: ''
   }; 
+}
+
+function updatedList(items, oldItem, newItem) {
+  const index = items.indexOf(oldItem);
+  const updated = items.slice(0);
+  updated.splice(index, 1, newItem);
+  return updated;
 }
 
 function updatedRecords(labels, id, attrs) {
@@ -167,16 +190,17 @@ function teachableExamplesFor(languageModel, trainingData) {
 }
 
 function LabelBucket(props) {
-  const {label, labels, setLabels, examplesMap, setExamplesMap} = props;
+  const {label, labelIndex, labels, setLabels, examplesMap, setExamplesMap} = props;
   const examples = examplesMap[label.id] || [];
   return (
     <div
       key={label.id}
       className="App-bucket">
-      <div className="App-bucket-header">
+      <div className="App-bucket-header" style={{backgroundColor: colors[labelIndex]}}>
         <input
           type="text"
           className="App-bucket-input"
+          style={{backgroundColor: colors[labelIndex]}}
           placeholder="Label..."
           value={label.text}
           onChange={e => {
@@ -199,6 +223,9 @@ function LabelBucket(props) {
               className="App-example-textarea"
               placeholder="Example..."
               value={example.text}
+              style={{
+                backgroundColor: chroma(colors[labelIndex]).alpha(0.5)
+              }}
               onChange={e => {
                 setExamplesMap({
                   ...examplesMap,
@@ -212,6 +239,7 @@ function LabelBucket(props) {
       </div>
       <button
         className="App-button"
+        style={{marginTop: 20, color: 'black'}}
         onClick={() => {
           setExamplesMap({
             ...examplesMap,
@@ -223,3 +251,18 @@ function LabelBucket(props) {
     </div>
   );
 }
+
+const colors = [
+  '#31AB39',
+  '#EB4B26',
+  '#139DEA',
+  // '#333333',
+  '#CDD71A',
+  '#6A2987',
+  '#fdbf6f',
+  '#ff7f00',
+  '#cab2d6',
+  '#6a3d9a',
+  '#ffff99',
+  '#b15928'
+];
