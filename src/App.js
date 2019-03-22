@@ -55,10 +55,10 @@ export default function App() {
       const classifier = teach(teachableExamples);
       console.log('classifier', classifier);
       Promise.all(testSentences.map(testSentence => {
-        return embeddingsFor(languageModel, [testSentence]).then(testEmbeddings => {
-          return classifier.predictClass(testEmbeddings).then(predictions => {
+        return embeddingsFor(languageModel, [testSentence]).then(embeddings => {
+          return classifier.predictClass(embeddings).then(predictions => {
             console.log('predictions', predictions, testSentence);
-            return {predictions, sentence: testSentence};
+            return {embeddings, predictions, sentence: testSentence};
           });
         });
       })).then(setResults);
@@ -128,6 +128,9 @@ export default function App() {
                     opacity: 0.5,
                     height: Math.floor(result.predictions.confidences[classIndex]*100) + '%'}}></div>
                 ))}
+              </div>
+              <div style={{color: 'red'}}>
+                <TinyEmbedding embedding={result.embeddings} />
               </div>
             </div>
           ))}
@@ -239,7 +242,7 @@ function LabelBucket(props) {
       </div>
       <button
         className="App-button"
-        style={{marginTop: 20, color: 'black'}}
+        style={{marginTop: 10, marginBottom: 20, color: 'black'}}
         onClick={() => {
           setExamplesMap({
             ...examplesMap,
@@ -252,6 +255,36 @@ function LabelBucket(props) {
   );
 }
 
+function TinyEmbedding({embedding}) {
+  const numbers = embedding.dataSync();
+  console.log('numbers', numbers);
+  return (
+    <div style={{
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      top: 0,
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'flex-end'
+    }}>
+      {numbers.map((number, index) => {
+        const height = `${Math.floor((0.5+number)*100)}%`;
+        console.log(number, number + 0.5, index, height, Math.floor(number*100));
+        return (
+          <div key={index} style={{
+            flex: 1,
+            background: 'black',
+            opacity: 0.8,
+            width: `${Math.floor(100 * 1/numbers.length)}%`,
+            height
+          }}>ok</div>
+        );
+      })}
+    </div>
+  );
+}
 const colors = [
   '#31AB39',
   '#EB4B26',
