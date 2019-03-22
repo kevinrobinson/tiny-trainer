@@ -200,14 +200,19 @@ export default function App() {
                   flexDirection: 'row',
                   alignItems: 'flex-end'
                 }}>
-                  {Object.keys(result.predictions.confidences).map(classIndex => (
-                    <div key={classIndex} style={{
-                      flex: 1,
-                      background: colors[classIndex],
-                      height: 10,
-                      opacity: result.predictions.confidences[classIndex]
-                    }}></div>
-                  ))}
+                  {Object.keys(result.predictions.confidences).map(classIndex => {
+                    const rating = result.predictions.confidences[classIndex];
+                    return (
+                      <div key={classIndex} style={{
+                        flex: 1,
+                        background: chroma(colors[classIndex]).alpha(rating),
+                        color: chroma('#333').alpha(rating),
+                        padding: 2,
+                        height: 10,
+                        fontSize: 10
+                      }}>{Math.round(rating * 100)}%</div>
+                    );
+                  })}
                 </div>
               </div>
               {showEmbedding && <TinyEmbedding embedding={result.embedding} />}

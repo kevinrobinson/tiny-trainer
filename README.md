@@ -6,6 +6,8 @@ https://tiny-trainer.netlify.com/
 
 ![dataset](docs/dataset.png)
 ![results](docs/results.png)
+![t](docs/t.png)
+![q](docs/q.png)
 ![ingredients](docs/ingredients.png)
 
 ### References
