@@ -1,93 +1,95 @@
 import React, { useState, useEffect } from 'react';
+import {useQueryParam, StringParam} from 'use-query-params';
 import _ from 'lodash';
 import uuid from 'uuid/v4';
+import qs from 'query-string';
 import chroma from 'chroma-js';
 import './App.css';
 import * as tf from '@tensorflow/tfjs';
 import {loadModel, embeddingsFor} from './encoder';
 import {teach} from './classify';
 import IngredientsLabel from './IngredientsLabel';
+import Spinner from './Spinner';
 
-
-const demoLabels = [
-  {id: 'a', text: 'smart phones' },
-  {id: 'b', text: 'food and health' },
-  {id: 'c', text: 'asking about age' },
-];
-const demoExamplesMap = {
-  'a': [
-    { id: 'a1', text: "I like my phone" },
-    { id: 'a2', text: "My phone is not good." },
-    { id: 'a3', text: "Your cellphone looks great." },
-  ],
-  'b': [
-    { id: 'b1', text: "An apple a day, keeps the doctors away" },
-    { id: 'b2', text: "Eating strawberries is healthy" },
-    { id: 'b3', text: "Is paleo better than keto?" }
-  ],
-  'c': [
-    { id: 'c1', text: "How old are you?" },
-    { id: 'c2', text: "What is your age?" }
-  ]
-};
-const demoTestSentences = [
-  'Kale and brussels are the best foods.',
-  'Blackberry is better than Android.',
-  'You are too young to make things with computers!'
+const exampleDataSets = [
+  'eyJsYWJlbHMiOlt7ImlkIjoiYSIsInRleHQiOiJzbWFydCBwaG9uZXMifSx7ImlkIjoiYiIsInRleHQiOiJmb29kIGFuZCBoZWFsdGgifSx7ImlkIjoiYyIsInRleHQiOiJhc2tpbmcgYWJvdXQgYWdlIn1dLCJleGFtcGxlc01hcCI6eyJhIjpbeyJpZCI6ImExIiwidGV4dCI6IkkgbGlrZSBteSBwaG9uZSJ9LHsiaWQiOiJhMiIsInRleHQiOiJNeSBwaG9uZSBpcyBub3QgZ29vZC4ifSx7ImlkIjoiYTMiLCJ0ZXh0IjoiWW91ciBjZWxscGhvbmUgbG9va3MgZ3JlYXQuIn1dLCJiIjpbeyJpZCI6ImIxIiwidGV4dCI6IkFuIGFwcGxlIGEgZGF5LCBrZWVwcyB0aGUgZG9jdG9ycyBhd2F5In0seyJpZCI6ImIyIiwidGV4dCI6IkVhdGluZyBzdHJhd2JlcnJpZXMgaXMgaGVhbHRoeSJ9LHsiaWQiOiJiMyIsInRleHQiOiJJcyBwYWxlbyBiZXR0ZXIgdGhhbiBrZXRvPyJ9XSwiYyI6W3siaWQiOiJjMSIsInRleHQiOiJIb3cgb2xkIGFyZSB5b3UifV19fQ==',
+  'eyJsYWJlbHMiOlt7ImlkIjoiYSIsInRleHQiOiJwbGFuZXMifSx7ImlkIjoiYiIsInRleHQiOiJwb2xpdGljcyJ9LHsiaWQiOiJjIiwidGV4dCI6ImVjb25vbXkifV0sImV4YW1wbGVzTWFwIjp7ImEiOlt7ImlkIjoiYTEiLCJ0ZXh0IjoiSW52ZXN0aWdhdGlvbiBpbnRvIHRoZSBCb2VpbmcgcGxhbmUgY3Jhc2guIn0seyJpZCI6ImEyIiwidGV4dCI6IkFpcmxpbmVzIG1ha2UgbW9uZXkgc2VsbGluZyB0aWNrZXRzLiJ9LHsiaWQiOiJhMyIsInRleHQiOiJGbGlnaHQgZGVsYXlzIGFyZSBleHBlY3RlZCB3aXRoIHNub3cgdGhpcyB3ZWVrZW5kLiJ9XSwiYiI6W3siaWQiOiJiMSIsInRleHQiOiJOb3J0aCBLb3JlYSBuZWdvdGlhdGlvbnMuIn0seyJpZCI6ImIyIiwidGV4dCI6IlRoZSBXaGl0ZSBIb3VzZSBhbmQgQ29uZ3Jlc3MgYXJlIGluIG5lZ290aWF0aW9ucy4ifSx7ImlkIjoiYjMiLCJ0ZXh0IjoiVGhlIGJpbGwgaXMgbm90IGV4cGVjdGVkIHRvIHBhc3MsIHRoZSBwcmVzaWRlbnQgd2lsbCB2ZXRvIGl0LiJ9XSwiYyI6W3siaWQiOiJjMSIsInRleHQiOiJJbmZsYXRpb24gbG9va3Mgc3RhYmxlLCBzYXlzIHRoZSBGZWQuIn0seyJpZCI6ImMyIiwidGV4dCI6IlVuZW1wbG95bWVudCBpcyBsb3cgYnV0IHdhZ2VzIGFyZSBub3QgcmlzaW5nIGxpa2UgdGhleSB1c2VkIHRvLiJ9XX19'
 ];
 
-// const demoResults = [ { "predictions": { "classIndex": 1, "confidences": { "0": 0, "1": 1 } }, "sentence": "Which one is it?" }, { "predictions": { "classIndex": 1, "confidences": { "0": 0.3333333333333333, "1": 0.6666666666666666 } }, "sentence": "You think you can tell." }, { "predictions": { "classIndex": 1, "confidences": { "0": 0.3333333333333333, "1": 0.6666666666666666 } }, "sentence": "But can you?" } ];
-// const demoResults = [{"predictions":{"classIndex":1,"confidences":{"0":0,"1":1,"2":0}},"sentence":"Kale and brussels are the best foods."},{"predictions":{"classIndex":0,"confidences":{"0":1,"1":0,"2":0}},"sentence":"Blackberry is better than Android."},{"predictions":{"classIndex":2,"confidences":{"0":0.3333333333333333,"1":0,"2":0.6666666666666666}},"sentence":"You are too young to make things with computers!"}];
 
 export default function App() {
-  const [labels, setLabels] = useState(demoLabels);
-  const [examplesMap, setExamplesMap] = useState(demoExamplesMap);
+  const [labels, setLabels] = useState([]);
+  const [examplesMap, setExamplesMap] = useState({});
   const [trainingData, setTrainingData] = useState(null);
   const languageModel = usePromise(loadModel);
   const [classifier, setClassifier] = useState(null);
   const [results, setResults] = useState(null);
-  const [testSentences, setTestSentences] = useState(demoTestSentences);
+  const [feedKey, setFeedKey] = useState('associated-press')
+  const [testSentences, setTestSentences] = useState([]);  
+  const [q, setQ] = useQueryParam('q', StringParam);
+  const showEmbedding = false;
+
+  // query string
+  const [hasReadQueryString, setHasReadQueryString] = useState(false);
+  useEffect(() => {
+    if (hasReadQueryString) return;
+    const queryString = qs.parse(window.location.search);
+    const q = queryString.q || _.sample(exampleDataSets);
+    const json = JSON.parse(atob(q));
+    const {labels, examplesMap} = json;
+    setExamplesMap(examplesMap);
+    setLabels(labels);
+    setHasReadQueryString(true);
+  }, [hasReadQueryString, q]);
+
+  useEffect(() => {
+    window.history.replaceState(null, null, '?q=' + btoa(JSON.stringify({labels, examplesMap})));
+  }, [labels, examplesMap]);
+
+  // fetching news, clear any results too
+  useEffect(() => {
+    fetchRecentArticles(feedKey)
+      .then(setTestSentences)
+      .then(() => setResults(null));
+  }, [feedKey]);
+
 
   // do training
   const [isTraining, setIsTraining] = useState(false);
-  const shouldTrainClassifier = (
-    (languageModel !== null) &&
-    (trainingData !== null) &&
-    (classifier === null) &&
-    (!isTraining)
-  );
   useEffect(() => {
+    const shouldTrainClassifier = (
+      (languageModel !== null) &&
+      (trainingData !== null) &&
+      (classifier === null) &&
+      (!isTraining)
+    );
     if (!shouldTrainClassifier) return;
 
     setIsTraining(true);
     teachableExamplesFor(languageModel, trainingData)
       .then(teachableExamples => teach(teachableExamples))
       .then(setClassifier)
-      // .then(() => console.log('dataset', classifier.getClassifierDataset()))
       .then(() => setIsTraining(false));
   }, [isTraining, trainingData, languageModel, classifier]);
 
   // do prediction
-  const [isPredicting, setIsPredicting] = useState(false);
-  const shouldPredict = (
-    (!isTraining) &&
-    (classifier !== null) &&
-    (results === null) &&
-    (!isPredicting)
-  );
+  // TODO(kr) doesn't abort properly
+  const [isPredicting, setIsPredicting] = useState(false);  
   useEffect(() => {
+    const shouldPredict = (
+      (!isTraining) &&
+      (classifier !== null) &&
+      (results === null) &&
+      (!isPredicting)
+    );
     if (!shouldPredict) return;
 
     setIsPredicting(true);
     embeddingsFor(languageModel, testSentences).then(embeddingsT => {
-      // console.log('embeddingsT', embeddingsT);
       return embeddingsT.array().then(embeddings => {
-        // console.log('embeddings', embeddings);
         return Promise.all(embeddings.map((embedding, index) => {
-          // console.log('embedding, index', index, embedding);
           return classifier.predictClass(tf.tensor(embedding)).then(predictions => {
             const sentence = testSentences[index];
-            // console.log('predictions', sentence, predictions);
             return {embedding, predictions, sentence};
           });
         }));
@@ -102,13 +104,32 @@ export default function App() {
     ? 'Training...'
     : isPredicting
       ? 'Predicting...'
-      : 'Train';
-  console.log('render', buttonText, {isTraining, isPredicting});
+      : 'Train and Predict';
   return (
     <div className="App">
       <header className="App-header">
         <div className="App-bar">
-          <span style={{marginRight: 10}}>Training data</span>
+          <span style={{marginRight: 40}}>Training data</span>
+          <button
+            className="App-button"
+            style={{color: '#eee', display: 'inline-block'}}
+            onClick={() => {
+              if (!window.confirm('This will reset your work.  Load?')) return;
+              setHasReadQueryString(false);
+              setQ(_.sample(exampleDataSets));
+            }}>
+            Load example
+          </button>
+          <button
+            className="App-button"
+            style={{color: '#eee', display: 'inline-block'}}
+            onClick={() => {
+              if (!window.confirm('This will reset your work.  Clear?')) return;
+              setLabels([newLabel()]);
+              setExamplesMap({});
+            }}>
+            Reset
+          </button>
           <button
             className="App-button"
             style={{color: '#eee', display: 'inline-block'}}
@@ -133,19 +154,40 @@ export default function App() {
           <button
             className="App-button App-button-train"
             disabled={!languageModel || isTraining || isPredicting}
-            onClick={() => setTrainingData({labels, examplesMap})}>
+            onClick={() => {
+              setTrainingData({labels, examplesMap});
+              setClassifier(null);
+              setResults(null);
+            }}>
             {buttonText}
           </button>
+          <Spinner style={{opacity: (isTraining || isPredicting) ? 1 : 0}} />
         </div>
         <div className="App-results">
-          {!trainingData && testSentences.map((sentence, sentenceIndex) => (
+          <div style={{marginBottom: 10}}>
+            <span style={{marginRight: 10}}>Test data from</span>
+            <SelectFeed feedKey={feedKey} setFeedKey={setFeedKey} />
+            <span> via <a target="_blank" rel="noopener noreferrer" style={{color: '#eee'}} href="https://newsapi.org">newsapi.org</a>, or edit yourself!</span>
+          </div>
+          {!results && testSentences.map((sentence, sentenceIndex) => (
             <div className="App-sentence" key={sentenceIndex}>
               <input
                 type="text"
                 className="App-test-sentence-input"
+                disabled={isTraining || isPredicting}
                 onChange={e => setTestSentences(updatedList(testSentences, sentence, e.target.value))}
                 value={sentence}
               />
+              <button
+                className="App-button"
+                style={{
+                  position: 'absolute',
+                  left: -40,
+                  display: (isTraining || isPredicting) ? 'none' : 'auto'
+                }}
+                onClick={() => setTestSentences(_.without(testSentences, sentence))}>
+                ×
+              </button>
             </div>
           ))}
           {(results || []).map(result => (
@@ -153,11 +195,7 @@ export default function App() {
               <div className="App-result">
                 <div>{result.sentence}</div>
                 <div style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  top: 0,
+                  marginTop: 10,
                   display: 'flex',
                   flexDirection: 'row',
                   alignItems: 'flex-end'
@@ -166,15 +204,15 @@ export default function App() {
                     <div key={classIndex} style={{
                       flex: 1,
                       background: colors[classIndex],
-                      opacity: 0.5,
-                      height: Math.floor(result.predictions.confidences[classIndex]*100) + '%'}}></div>
+                      height: 10,
+                      opacity: result.predictions.confidences[classIndex]
+                    }}></div>
                   ))}
                 </div>
               </div>
-              <TinyEmbedding embedding={result.embedding} />
+              {showEmbedding && <TinyEmbedding embedding={result.embedding} />}
             </div>
           ))}
-          {/*<pre style={{fontSize: 10}}>{JSON.stringify(results)}</pre>*/}
           <div className="App-ingredients"><ProjectIngredients /></div>
         </div>
       </header>
@@ -340,10 +378,18 @@ const colors = [
 ];
 
 
+function fetchRecentArticles(feedKey) {
+  const apiKey = 'ff6d0ce2e73f4f7a88a9a402f1994777';
+  const url = `https://newsapi.org/v2/top-headlines?sources=${feedKey}&apiKey=${apiKey}`;
+  return fetch(url)
+    .then(r => r.json())
+    .then(json => json.articles.map(a => a.title));
+}
+
 function ProjectIngredients() {
   return (
     <IngredientsLabel
-      dataSets={<div><a target="_blank" rel="noopener noreferrer"  href="https://arxiv.org/abs/1803.11175">Web sources (eg, Wikipedia, news and Q&A sites)</a> by Google</div>}
+      dataSets={<div><a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/abs/1803.11175">Web sources (eg, Wikipedia, news and Q&A sites)</a> by Google</div>}
       preTrainedModels={<div><a target="_blank" rel="noopener noreferrer" href="https://github.com/tensorflow/tfjs-models/tree/master/universal-sentence-encoder">Universal Sentence Encoder lite</a> by Google</div>}
       architectures={<div>
         <div><a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/pdf/1706.03762.pdf">Transformer</a> by Google</div>
@@ -351,5 +397,16 @@ function ProjectIngredients() {
       </div>}
       tunings={<div><a target="_blank" rel="noopener noreferrer" href="https://github.com/kevinrobinson/tiny-trainer">tiny-trainer</a> by <a target="_blank" rel="noopener noreferrer" href="https://github.com/kevinrobinson">Kevin Robinson</a></div>}
     />
+  );
+}
+function SelectFeed({feedKey, setFeedKey}) {
+  return (
+    <select value={feedKey} onChange={e => setFeedKey(e.target.value)}>
+      <option value="associated-press">Associated Press</option>
+      <option value="ign">IGN</option>
+      <option value="bleacher-report">Bleacher Report</option>
+      <option value="the-new-york-times">New York Times</option>
+      <option value="the-times-of-india">Times of India</option>
+    </select>
   );
 }

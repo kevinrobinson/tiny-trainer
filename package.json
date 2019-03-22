@@ -8,9 +8,11 @@
     "@tensorflow/tfjs": "1.0.0",
     "chroma-js": "^2.0.3",
     "lodash": "^4.17.11",
+    "query-string": "^6.4.0",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
     "react-scripts": "2.1.8",
+    "use-query-params": "^0.2.0",
     "uuid": "^3.3.2"
   },
   "scripts": {

@@ -1,0 +1,32 @@
+
+// const demoLabels = [
+//   {id: 'a', text: 'smart phones' },
+//   {id: 'b', text: 'food and health' },
+//   {id: 'c', text: 'asking about age' },
+// ];
+// const demoExamplesMap = {
+//   'a': [
+//     { id: 'a1', text: "I like my phone" },
+//     { id: 'a2', text: "My phone is not good." },
+//     { id: 'a3', text: "Your cellphone looks great." },
+//   ],
+//   'b': [
+//     { id: 'b1', text: "An apple a day, keeps the doctors away" },
+//     { id: 'b2', text: "Eating strawberries is healthy" },
+//     { id: 'b3', text: "Is paleo better than keto?" }
+//   ],
+//   'c': [
+//     { id: 'c1', text: "How old are you?" },
+//     { id: 'c2', text: "What is your age?" }
+//   ]
+// };
+// const demoTestSentences = [
+//   'Kale and brussels are the best foods.',
+//   'Blackberry is better than Android.',
+//   'You are too young to make things with computers!'
+// ];
+
+// const demoResults = [ { "predictions": { "classIndex": 1, "confidences": { "0": 0, "1": 1 } }, "sentence": "Which one is it?" }, { "predictions": { "classIndex": 1, "confidences": { "0": 0.3333333333333333, "1": 0.6666666666666666 } }, "sentence": "You think you can tell." }, { "predictions": { "classIndex": 1, "confidences": { "0": 0.3333333333333333, "1": 0.6666666666666666 } }, "sentence": "But can you?" } ];
+// const demoResults = [{"predictions":{"classIndex":1,"confidences":{"0":0,"1":1,"2":0}},"sentence":"Kale and brussels are the best foods."},{"predictions":{"classIndex":0,"confidences":{"0":1,"1":0,"2":0}},"sentence":"Blackberry is better than Android."},{"predictions":{"classIndex":2,"confidences":{"0":0.3333333333333333,"1":0,"2":0.6666666666666666}},"sentence":"You are too young to make things with computers!"}];
+
+// eyJsYWJlbHMiOlt7ImlkIjoiYSIsInRleHQiOiJwbGFuZXMifSx7ImlkIjoiYiIsInRleHQiOiJwb2xpdGljcyJ9LHsiaWQiOiJjIiwidGV4dCI6ImVjb25vbXkifV0sImV4YW1wbGVzTWFwIjp7ImEiOlt7ImlkIjoiYTEiLCJ0ZXh0IjoiSW52ZXN0aWdhdGlvbiBpbnRvIHRoZSBCb2VpbmcgcGxhbmUgY3Jhc2guIn0seyJpZCI6ImEyIiwidGV4dCI6IkFpcmxpbmVzIG1ha2UgbW9uZXkgc2VsbGluZyB0aWNrZXRzLiJ9LHsiaWQiOiJhMyIsInRleHQiOiJGbGlnaHQgZGVsYXlzIGFyZSBleHBlY3RlZCB3aXRoIHNub3cgdGhpcyB3ZWVrZW5kLiJ9XSwiYiI6W3siaWQiOiJiMSIsInRleHQiOiJOb3J0aCBLb3JlYSBuZWdvdGlhdGlvbnMuIn0seyJpZCI6ImIyIiwidGV4dCI6IlRoZSBXaGl0ZSBIb3VzZSBhbmQgQ29uZ3Jlc3MgYXJlIGluIG5lZ290aWF0aW9ucy4ifSx7ImlkIjoiYjMiLCJ0ZXh0IjoiVGhlIGJpbGwgaXMgbm90IGV4cGVjdGVkIHRvIHBhc3MsIHRoZSBwcmVzaWRlbnQgd2lsbCB2ZXRvIGl0LiJ9XSwiYyI6W3siaWQiOiJjMSIsInRleHQiOiJJbmZsYXRpb24gbG9va3Mgc3RhYmxlLCBzYXlzIHRoZSBGZWQuIn0seyJpZCI6ImMyIiwidGV4dCI6IlVuZW1wbG95bWVudCBpcyBsb3cgYnV0IHdhZ2VzIGFyZSBub3QgcmlzaW5nIGxpa2UgdGhleSB1c2VkIHRvLiJ9XX19
