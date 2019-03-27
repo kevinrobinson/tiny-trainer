@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useReducer } from 'react';
 import {useQueryParam, StringParam} from 'use-query-params';
 import _ from 'lodash';
-import fs from 'fs';
 import uuid from 'uuid/v4';
 import qs from 'query-string';
 import chroma from 'chroma-js';
