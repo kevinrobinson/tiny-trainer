@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 import {useQueryParam, StringParam} from 'use-query-params';
 import _ from 'lodash';
 import uuid from 'uuid/v4';
@@ -22,7 +22,7 @@ export default function App() {
   const [labels, setLabels] = useState([]);
   const [examplesMap, setExamplesMap] = useState({});
   const [trainingData, setTrainingData] = useState(null);
-  const languageModel = usePromise(loadModel);
+  const [languageModel, setLanguageModel] = useState(null);
   const [classifier, setClassifier] = useState(null);
   const [results, setResults] = useState(null);
   const [feedKey, setFeedKey] = useState('associated-press')
@@ -30,10 +30,28 @@ export default function App() {
   const [q, setQ] = useQueryParam('q', StringParam);
   const showEmbedding = false;
 
+  // logging
+  const [{isVisible, logs}, dispatch] = useReducer(logReducer, {
+    logs: [],
+    isVisible: false
+  });
+  const log = (...payload) => dispatch({type: 'log', payload});
+
+  // load USE model
+  useEffect(() => {
+    if (languageModel !== null) return;
+    log('Loading languageModel...');
+    loadModel()
+      .then(setLanguageModel)
+      .then(() => log('languageModel loaded.'));
+  }, [languageModel]);
+
   // query string
   const [hasReadQueryString, setHasReadQueryString] = useState(false);
   useEffect(() => {
     if (hasReadQueryString) return;
+
+    log('readQueryString', feedKey);
     const queryString = qs.parse(window.location.search);
     const q = queryString.q || _.sample(exampleDataSets);
     const json = JSON.parse(atob(q));
@@ -49,9 +67,11 @@ export default function App() {
 
   // fetching news, clear any results too
   useEffect(() => {
+    log('fetchRecentArticles...', feedKey);
     fetchRecentArticles(feedKey)
       .then(setTestSentences)
-      .then(() => setResults(null));
+      .then(() => setResults(null))
+      .then(() => log('fetchRecentArticles done.'));
   }, [feedKey]);
 
 
@@ -66,11 +86,15 @@ export default function App() {
     );
     if (!shouldTrainClassifier) return;
 
+    log("\nTraining...");
     setIsTraining(true);
-    teachableExamplesFor(languageModel, trainingData)
-      .then(teachableExamples => teach(teachableExamples))
-      .then(setClassifier)
-      .then(() => setIsTraining(false));
+    setTimeout(() => { // yield a tick since otherwise UI doesn't update
+      teachableExamplesFor(languageModel, trainingData)
+        .then(teachableExamples => teach(teachableExamples))
+        .then(setClassifier)
+        .then(() => log('Training done.'))
+        .then(() => setIsTraining(false));
+    }, 20);
   }, [isTraining, trainingData, languageModel, classifier]);
 
   // do prediction
@@ -86,8 +110,11 @@ export default function App() {
     if (!shouldPredict) return;
 
     setIsPredicting(true);
+    log('\nPredicting, mapping to embeddings...');
     embeddingsFor(languageModel, testSentences).then(embeddingsT => {
+      log('Predicting, reading embeddings...');
       return embeddingsT.array().then(embeddings => {
+        log('Predicting, classifying...');
         return Promise.all(embeddings.map((embedding, index) => {
           return classifier.predictClass(tf.tensor(embedding)).then(predictions => {
             const sentence = testSentences[index];
@@ -95,7 +122,9 @@ export default function App() {
           });
         }));
       });
-    }).then(setResults).then(() => setIsPredicting(false));
+    }).then(setResults)
+      .then(() => log('Predicting done.'))
+      .then(() => setIsPredicting(false));
   }, [isTraining, isPredicting, testSentences, classifier, results]);
 
   // Some bug here with UI not updating, even though
@@ -152,18 +181,30 @@ export default function App() {
           ))}
         </div>
         <div className="App-training">
-          <button
-            className="App-button App-button-train"
-            disabled={!languageModel || isTraining || isPredicting}
-            onClick={() => {
-              setTrainingData({labels, examplesMap});
-              setClassifier(null);
-              setResults(null);
-            }}>
-            {buttonText}
-          </button>
+          <div>
+            <button
+              className="App-button App-button-train"
+              style={{display: 'inline-block'}}
+              disabled={!languageModel || isTraining || isPredicting}
+              onClick={() => {
+                log('\nclick:setTrainingData...');
+                setTrainingData({labels, examplesMap});
+                log('click:setClassifier...');
+                setClassifier(null);
+                log('click:setResults...');
+                setResults(null);
+              }}>
+              {buttonText}
+            </button>
+            <button className="App-button"
+              style={{marginLeft: 20, color: '#eee', display: 'inline-block'}}
+              onClick={() => dispatch({type: 'toggle'})}>
+              Show logs
+            </button>
+          </div>
           <Spinner style={{opacity: (isTraining || isPredicting) ? 1 : 0}} />
         </div>
+        {isVisible && <pre className="App-debug">{logs}</pre>}
         <div className="App-results">
           <div style={{marginBottom: 10}}>
             <span style={{marginRight: 10}}>Test data from</span>
@@ -415,4 +456,21 @@ function SelectFeed({feedKey, setFeedKey}) {
       <option value="the-times-of-india">Times of India</option>
     </select>
   );
+}
+
+function logReducer(state, action) {
+  const {isVisible, logs} = state;
+  const {type} = action;
+
+  if (type ===  'log') {
+    const args = action.payload;
+    const output = args.map(arg => _.isObject(arg) ? JSON.stringify(arg) : arg).join(' ') + "\n";
+    console.debug('logReducer:', output);
+    return {...state, logs: logs.concat(output)};
+  }
+
+  if (type ===  'toggle') {
+    return {...state, isVisible: !isVisible};
+  }
+  throw new Error(`unexpected type: ${type}`)
 }

@@ -137,3 +137,12 @@ select {
   margin-top: 40px;
   margin-bottom: 40px;
 }
+
+.App-debug {
+  font-size: 10px;
+  width: 800px;
+  color: #666;
+  background: white;
+  padding: 15px;
+  text-align: left;
+}
