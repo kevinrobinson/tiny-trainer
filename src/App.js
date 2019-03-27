@@ -296,16 +296,6 @@ function updatedRecords(labels, id, attrs) {
   });
 }
 
-function usePromise(promiseFn) {
-  const [value, setValue] = useState(null);
-  useEffect(() => {
-    if (value !== null) return;
-    promiseFn().then(setValue);
-  }, [value]);
-
-  return value;
-}
-
 function teachableExamplesFor(languageModel, trainingData) {
   const {labels, examplesMap} = trainingData;
   return Promise.all(_.flatMap(labels, (label, labelIndex) => {
