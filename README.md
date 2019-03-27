@@ -13,11 +13,11 @@ https://tiny-trainer.netlify.com/
 ### Using your models
 You can click "Copy!" to get script tags you paste in an HTML page to make predictions in your own app.
 
-![own-app](docs/own-app.png)
-
-For an example in repl.it, see [https://repl.it/@kevinrobinson/WeeFancyTriangles](https://repl.it/@kevinrobinson/WeeFancyTriangles)
-
 ![repl](docs/repl.png)
+
+This is an example repl.it you can fork, see [https://repl.it/@kevinrobinson/WeeFancyTriangles](https://repl.it/@kevinrobinson/WeeFancyTriangles)
+
+![own-app](docs/own-app.png)
 
 
 ### References
