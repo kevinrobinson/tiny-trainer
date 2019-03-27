@@ -7,6 +7,7 @@
     "@tensorflow-models/universal-sentence-encoder": "^1.0.1",
     "@tensorflow/tfjs": "1.0.0",
     "chroma-js": "^2.0.3",
+    "clipboard-copy": "^3.0.0",
     "lodash": "^4.17.11",
     "query-string": "^6.4.0",
     "react": "^16.8.4",

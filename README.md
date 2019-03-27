@@ -10,6 +10,16 @@ https://tiny-trainer.netlify.com/
 ![q](docs/q.png)
 ![ingredients](docs/ingredients.png)
 
+### Using your models
+You can click "Copy!" to get script tags you paste in an HTML page to make predictions in your own app.
+
+![own-app](docs/own-app.png)
+
+For an example in repl.it, see [https://repl.it/@kevinrobinson/WeeFancyTriangles](https://repl.it/@kevinrobinson/WeeFancyTriangles)
+
+![repl](docs/repl.png)
+
+
 ### References
 - https://github.com/tensorflow/tfjs-models/blob/master/universal-sentence-encoder/demo/index.js
 - https://github.com/tensorflow/tfjs-models/tree/master/knn-classifier

@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useReducer } from 'react';
 import {useQueryParam, StringParam} from 'use-query-params';
 import _ from 'lodash';
+import fs from 'fs';
 import uuid from 'uuid/v4';
 import qs from 'query-string';
 import chroma from 'chroma-js';
+import clipboardCopy from 'clipboard-copy';
 import './App.css';
-import * as tf from '@tensorflow/tfjs';
-import {loadModel, embeddingsFor} from './encoder';
-import {teach} from './classify';
+import {loadModel, teachableExamplesFor, predict} from './classify';
 import IngredientsLabel from './IngredientsLabel';
 import Spinner from './Spinner';
 
@@ -89,8 +89,7 @@ export default function App() {
     log("\nTraining...");
     setIsTraining(true);
     setTimeout(() => { // yield a tick since otherwise UI doesn't update
-      teachableExamplesFor(languageModel, trainingData)
-        .then(teachableExamples => teach(teachableExamples))
+      teachableExamplesFor({languageModel, trainingData, log})
         .then(setClassifier)
         .then(() => log('Training done.'))
         .then(() => setIsTraining(false));
@@ -110,19 +109,9 @@ export default function App() {
     if (!shouldPredict) return;
 
     setIsPredicting(true);
-    log('\nPredicting, mapping to embeddings...');
-    embeddingsFor(languageModel, testSentences).then(embeddingsT => {
-      log('Predicting, reading embeddings...');
-      return embeddingsT.array().then(embeddings => {
-        log('Predicting, classifying...');
-        return Promise.all(embeddings.map((embedding, index) => {
-          return classifier.predictClass(tf.tensor(embedding)).then(predictions => {
-            const sentence = testSentences[index];
-            return {embedding, predictions, sentence};
-          });
-        }));
-      });
-    }).then(setResults)
+    log('Predicting...');
+    predict({classifier, languageModel, testSentences, log})
+      .then(r => setResults(r) || console.log('r', r))
       .then(() => log('Predicting done.'))
       .then(() => setIsPredicting(false));
   }, [isTraining, isPredicting, testSentences, classifier, results]);
@@ -201,6 +190,13 @@ export default function App() {
               onClick={() => dispatch({type: 'toggle'})}>
               Show logs
             </button>
+            {results && (
+              <button className="App-button"
+                style={{marginLeft: 20, color: '#eee', display: 'inline-block'}}
+                onClick={() => copyToClipboard(classifier)}>
+                Copy!
+              </button>
+            )}
           </div>
           <Spinner style={{opacity: (isTraining || isPredicting) ? 1 : 0}} />
         </div>
@@ -296,17 +292,6 @@ function updatedRecords(labels, id, attrs) {
   });
 }
 
-function teachableExamplesFor(languageModel, trainingData) {
-  const {labels, examplesMap} = trainingData;
-  return Promise.all(_.flatMap(labels, (label, labelIndex) => {
-    const examples = examplesMap[label.id];
-    return examples.map(example => {
-      return embeddingsFor(languageModel, [example.text]).then(embeddings => {
-        return {embeddings, labelIndex};
-      });
-    });
-  }));
-}
 
 function LabelBucket(props) {
   const {label, labelIndex, labels, setLabels, examplesMap, setExamplesMap} = props;
@@ -463,4 +448,61 @@ function logReducer(state, action) {
     return {...state, isVisible: !isVisible};
   }
   throw new Error(`unexpected type: ${type}`)
+}
+
+
+async function copyToClipboard(classifier) {
+  const d = classifier.getClassifierDataset();
+  const tensors = await Promise.all(Object.keys(d).map(id => d[id].array()));
+  const json = JSON.stringify(Object.keys(d).map((id, index) => {
+    return {id, data: tensors[index]};
+  }));
+
+  const text = `
+    <!-- Load TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <!-- see https://github.com/tensorflow/tfjs-models/tree/master/universal-sentence-encoder -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder"></script>
+    <!-- see https://github.com/tensorflow/tfjs-models/tree/master/knn-classifier -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier"></script>
+
+    <script id="tiny-trainer-copied-data" type="application/json">${json}</script>
+    <script>
+      (function() {
+        function loadClassifier() {
+          console.log('Loading classifier...');
+          const json = JSON.parse(document.querySelector('#tiny-trainer-copied-data').innerHTML);
+          const classifier = knnClassifier.create();
+          const dataset = json.reduce((map, {id,data}) => {
+            return {...map, [id]: tf.tensor(data)};
+          }, {});
+          console.log('dataset', dataset);
+          classifier.setClassifierDataset(dataset);
+          return classifier;
+        }
+
+        var classifier = null;
+        var modelPromise = null;
+        window.predict = function prediction(text) {
+          classifier || (classifier = loadClassifier());
+          if (!modelPromise) {
+            console.log('Loading language model...');
+            modelPromise = use.load();
+          }
+
+          console.log('Waiting for language model...');
+          return modelPromise.then(model => {
+            console.log('Embedding...');
+            return model.embed([text]).then(embeddings => {
+              console.log('embeddings', embeddings);
+              console.log('Predicting...');
+              return classifier.predictClass(embeddings);
+            });
+          });
+        }
+      })();
+    </script>
+  `;
+  clipboardCopy(text);
+  console.log(text);
 }
