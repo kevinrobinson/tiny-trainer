@@ -1,23 +1,28 @@
-import React, { useState, useEffect, useReducer } from 'react';
+import React, { useState, useEffect } from 'react';
 import {useQueryParam, StringParam} from 'use-query-params';
 import _ from 'lodash';
 import uuid from 'uuid/v4';
 import qs from 'query-string';
 import chroma from 'chroma-js';
-import clipboardCopy from 'clipboard-copy';
-import './App.css';
 import {loadModel, teachableExamplesFor, predict} from './classify';
-import IngredientsLabel from './IngredientsLabel';
+import copyToClipboard from './copyToClipboard';
+import {exampleDataSets} from './examples';
+import useLog from './useLog';
+import {colors} from './colors';
+import {updatedList} from './patch';
+import './App.css';
 import Spinner from './Spinner';
-
-const exampleDataSets = [
-  'eyJsYWJlbHMiOlt7ImlkIjoiYSIsInRleHQiOiJzbWFydCBwaG9uZXMifSx7ImlkIjoiYiIsInRleHQiOiJmb29kIGFuZCBoZWFsdGgifSx7ImlkIjoiYyIsInRleHQiOiJhc2tpbmcgYWJvdXQgYWdlIn1dLCJleGFtcGxlc01hcCI6eyJhIjpbeyJpZCI6ImExIiwidGV4dCI6IkkgbGlrZSBteSBwaG9uZSJ9LHsiaWQiOiJhMiIsInRleHQiOiJNeSBwaG9uZSBpcyBub3QgZ29vZC4ifSx7ImlkIjoiYTMiLCJ0ZXh0IjoiWW91ciBjZWxscGhvbmUgbG9va3MgZ3JlYXQuIn1dLCJiIjpbeyJpZCI6ImIxIiwidGV4dCI6IkFuIGFwcGxlIGEgZGF5LCBrZWVwcyB0aGUgZG9jdG9ycyBhd2F5In0seyJpZCI6ImIyIiwidGV4dCI6IkVhdGluZyBzdHJhd2JlcnJpZXMgaXMgaGVhbHRoeSJ9LHsiaWQiOiJiMyIsInRleHQiOiJJcyBwYWxlbyBiZXR0ZXIgdGhhbiBrZXRvPyJ9XSwiYyI6W3siaWQiOiJjMSIsInRleHQiOiJIb3cgb2xkIGFyZSB5b3UifV19fQ==',
-  'eyJsYWJlbHMiOlt7ImlkIjoiYSIsInRleHQiOiJwbGFuZXMifSx7ImlkIjoiYiIsInRleHQiOiJwb2xpdGljcyJ9LHsiaWQiOiJjIiwidGV4dCI6ImVjb25vbXkifV0sImV4YW1wbGVzTWFwIjp7ImEiOlt7ImlkIjoiYTEiLCJ0ZXh0IjoiSW52ZXN0aWdhdGlvbiBpbnRvIHRoZSBCb2VpbmcgcGxhbmUgY3Jhc2guIn0seyJpZCI6ImEyIiwidGV4dCI6IkFpcmxpbmVzIG1ha2UgbW9uZXkgc2VsbGluZyB0aWNrZXRzLiJ9LHsiaWQiOiJhMyIsInRleHQiOiJGbGlnaHQgZGVsYXlzIGFyZSBleHBlY3RlZCB3aXRoIHNub3cgdGhpcyB3ZWVrZW5kLiJ9XSwiYiI6W3siaWQiOiJiMSIsInRleHQiOiJOb3J0aCBLb3JlYSBuZWdvdGlhdGlvbnMuIn0seyJpZCI6ImIyIiwidGV4dCI6IlRoZSBXaGl0ZSBIb3VzZSBhbmQgQ29uZ3Jlc3MgYXJlIGluIG5lZ290aWF0aW9ucy4ifSx7ImlkIjoiYjMiLCJ0ZXh0IjoiVGhlIGJpbGwgaXMgbm90IGV4cGVjdGVkIHRvIHBhc3MsIHRoZSBwcmVzaWRlbnQgd2lsbCB2ZXRvIGl0LiJ9XSwiYyI6W3siaWQiOiJjMSIsInRleHQiOiJJbmZsYXRpb24gbG9va3Mgc3RhYmxlLCBzYXlzIHRoZSBGZWQuIn0seyJpZCI6ImMyIiwidGV4dCI6IlVuZW1wbG95bWVudCBpcyBsb3cgYnV0IHdhZ2VzIGFyZSBub3QgcmlzaW5nIGxpa2UgdGhleSB1c2VkIHRvLiJ9XX19',
-  'eyJsYWJlbHMiOlt7ImlkIjoiYSIsInRleHQiOiJzb2NjZXIifSx7ImlkIjoiYiIsInRleHQiOiJiYXNlYmFsbCJ9LHsiaWQiOiJjIiwidGV4dCI6ImhvY2tleSJ9XSwiZXhhbXBsZXNNYXAiOnsiYSI6W3siaWQiOiJhMSIsInRleHQiOiJNZXNzaSBuZWdvdGlhdGluZyBuZXcgY29udHJhY3QuIn0seyJpZCI6ImEyIiwidGV4dCI6Ik5ldyBHcmllem1hbm4gZG9jdW1lbnRhcnkgc2hvd3MgdGhlIGpvdXJuZXkgb2YgYSBzdGFyLiJ9LHsiaWQiOiJhMyIsInRleHQiOiJGSUZBIGhhcyB5ZXQgYW5vdGhlciBicmliZXJ5IHNjYW5kYWwuIn1dLCJiIjpbeyJpZCI6ImIxIiwidGV4dCI6IlRoZSBSZWQgU294IGFyZSB0YWtpbmcgb24gdGhlIEN1YnMgaW4gQXJpem9uYS4ifSx7ImlkIjoiYjIiLCJ0ZXh0IjoiU2FsZSByZWFkeSB0byBzdGFydCB0aGUgc2Vhc29uLiJ9LHsiaWQiOiJiMyIsInRleHQiOiJQaXRjaGluZyBpcyBtb3JlIGltcG9ydGFudCB0aGFuIGV2ZXIgdGhpcyB5ZWFyIGluIHRoZSBOTC4ifV0sImMiOlt7ImlkIjoiYzEiLCJ0ZXh0IjoiQnJ1aW5zIGFuZCBDYW5hZGllbnMgdHJhZGUgamFicy4ifSx7ImlkIjoiYzIiLCJ0ZXh0IjoiSWNpbmcgcnVsZXMgdW5kZXIgZGViYXRlIGluIFRvcm9udG8uIn1dfX0='
-];
+import ProjectIngredients from './ProjectIngredients';
+import BoxEmbedding from './BoxEmbedding';
+import LabelBucket from './LabelBucket';
+import SelectFeed from './SelectFeed';
+import Peek from './Peek';
 
 
 export default function App() {
+  if (window.location.pathname.indexOf('/peek') === 0) return <Peek />;
+
+  const {showLogs, logs, log, toggleShowLog} = useLog({showLogs: false});
   const [labels, setLabels] = useState([]);
   const [examplesMap, setExamplesMap] = useState({});
   const [trainingData, setTrainingData] = useState(null);
@@ -27,14 +32,6 @@ export default function App() {
   const [feedKey, setFeedKey] = useState('associated-press')
   const [testSentences, setTestSentences] = useState([]);  
   const [q, setQ] = useQueryParam('q', StringParam);
-  const showEmbedding = false;
-
-  // logging
-  const [{isVisible, logs}, dispatch] = useReducer(logReducer, {
-    logs: [],
-    isVisible: false
-  });
-  const log = (...payload) => dispatch({type: 'log', payload});
 
   // load USE model
   useEffect(() => {
@@ -72,7 +69,6 @@ export default function App() {
       .then(() => setResults(null))
       .then(() => log('fetchRecentArticles done.'));
   }, [feedKey]);
-
 
   // do training
   const [isTraining, setIsTraining] = useState(false);
@@ -165,6 +161,7 @@ export default function App() {
               setLabels={setLabels}
               examplesMap={examplesMap}
               setExamplesMap={setExamplesMap}
+              languageModel={languageModel}
             />
           ))}
         </div>
@@ -186,7 +183,7 @@ export default function App() {
             </button>
             <button className="App-button"
               style={{marginLeft: 20, color: '#eee', display: 'inline-block'}}
-              onClick={() => dispatch({type: 'toggle'})}>
+              onClick={toggleShowLog}>
               Show logs
             </button>
             {results && (
@@ -199,7 +196,7 @@ export default function App() {
           </div>
           <Spinner style={{opacity: (isTraining || isPredicting) ? 1 : 0}} />
         </div>
-        {isVisible && <pre className="App-debug">{logs}</pre>}
+        {showLogs && <pre className="App-debug">{logs}</pre>}
         <div className="App-results">
           <div style={{marginBottom: 10}}>
             <span style={{marginRight: 10}}>Test data from</span>
@@ -252,7 +249,7 @@ export default function App() {
                   })}
                 </div>
               </div>
-              {showEmbedding && <TinyEmbedding embedding={result.embedding} />}
+              <BoxEmbedding embedding={result.embedding} />
             </div>
           ))}
           <div className="App-ingredients"><ProjectIngredients /></div>
@@ -269,239 +266,10 @@ function newLabel() {
   };
 }
 
-function newExample() {
-  return {
-    id: uuid(),
-    text: ''
-  }; 
-}
-
-function updatedList(items, oldItem, newItem) {
-  const index = items.indexOf(oldItem);
-  const updated = items.slice(0);
-  updated.splice(index, 1, newItem);
-  return updated;
-}
-
-function updatedRecords(labels, id, attrs) {
-  return labels.map(label => {
-    return (label.id === id)
-      ? {...label, ...attrs}
-      : label;
-  });
-}
-
-
-function LabelBucket(props) {
-  const {label, labelIndex, labels, setLabels, examplesMap, setExamplesMap} = props;
-  const examples = examplesMap[label.id] || [];
-  return (
-    <div
-      key={label.id}
-      className="App-bucket">
-      <div className="App-bucket-header" style={{backgroundColor: colors[labelIndex]}}>
-        <input
-          type="text"
-          className="App-bucket-input"
-          style={{backgroundColor: colors[labelIndex]}}
-          placeholder="Label..."
-          value={label.text}
-          onChange={e => {
-            setLabels(updatedRecords(labels, label.id, {
-              text: e.target.value
-            }));
-          }} />
-        <button
-          className="App-button"
-          onClick={() => setLabels(_.without(labels, label))}>
-          ×
-        </button>
-      </div>
-      <div className="App-examples">
-        {examples.map(example => (
-          <div
-            key={example.id}
-            className="App-example">
-            <textarea
-              className="App-example-textarea"
-              placeholder="Example..."
-              value={example.text}
-              style={{
-                backgroundColor: chroma(colors[labelIndex]).alpha(0.5)
-              }}
-              onChange={e => {
-                setExamplesMap({
-                  ...examplesMap,
-                  [label.id]: updatedRecords(examples, example.id, {
-                    text: e.target.value
-                  })
-                })
-              }}></textarea>
-          </div>
-        ))}
-      </div>
-      <button
-        className="App-button"
-        style={{marginTop: 10, marginBottom: 20, color: 'black'}}
-        onClick={() => {
-          setExamplesMap({
-            ...examplesMap,
-            [label.id]: examples.concat(newExample())
-          });
-        }}>
-        Add example
-      </button>
-    </div>
-  );
-}
-
-function TinyEmbedding({embedding}) {
-  const width = 1;
-  return (
-    <svg
-      className="App-embedding-svg"
-      width="100%"
-      height={30}
-      preserveAspectRatio="none"
-      viewBox={`0 0 ${embedding.length} 100`}
-    >
-      {embedding.map((number, index) => {
-        // TODO(kr) just guess about why these are negative, need
-        // to learn more, this just assumes they're [-0.5, 0.5]
-        const height = Math.round((0.5+number)*100);
-        return (
-          <rect
-            className="App-embedding-rect"
-            key={index}
-            x={width * index}
-            y={100 - height}
-            width={width}
-            height={height}
-          />
-        );
-      })}
-    </svg>
-  );
-}
-const colors = [
-  '#31AB39',
-  '#EB4B26',
-  '#139DEA',
-  // '#333333',
-  '#CDD71A',
-  '#6A2987',
-  '#fdbf6f',
-  '#ff7f00',
-  '#cab2d6',
-  '#6a3d9a',
-  '#ffff99',
-  '#b15928'
-];
-
-
 function fetchRecentArticles(feedKey) {
   const apiKey = 'ff6d0ce2e73f4f7a88a9a402f1994777';
   const url = `https://newsapi.org/v2/top-headlines?sources=${feedKey}&apiKey=${apiKey}`;
   return fetch(url)
     .then(r => r.json())
     .then(json => json.articles.map(a => a.title));
-}
-
-function ProjectIngredients() {
-  return (
-    <IngredientsLabel
-      dataSets={<div><a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/abs/1803.11175">Web sources (eg, Wikipedia, news and Q&A sites)</a> by Google</div>}
-      preTrainedModels={<div><a target="_blank" rel="noopener noreferrer" href="https://github.com/tensorflow/tfjs-models/tree/master/universal-sentence-encoder">Universal Sentence Encoder lite</a> by Google</div>}
-      architectures={<div>
-        <div><a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/pdf/1706.03762.pdf">Transformer</a> by Google</div>
-        <div><a target="_blank" rel="noopener noreferrer" href="https://github.com/tensorflow/tfjs-models/tree/master/knn-classifier">KNN Classifier</a> by Google</div>
-      </div>}
-      tunings={<div><a target="_blank" rel="noopener noreferrer" href="https://github.com/kevinrobinson/tiny-trainer">tiny-trainer</a> by <a target="_blank" rel="noopener noreferrer" href="https://github.com/kevinrobinson">Kevin Robinson</a></div>}
-    />
-  );
-}
-function SelectFeed({feedKey, setFeedKey}) {
-  return (
-    <select value={feedKey} onChange={e => setFeedKey(e.target.value)}>
-      <option value="associated-press">Associated Press</option>
-      <option value="ign">IGN</option>
-      <option value="bleacher-report">Bleacher Report</option>
-      <option value="the-new-york-times">New York Times</option>
-      <option value="the-times-of-india">Times of India</option>
-    </select>
-  );
-}
-
-function logReducer(state, action) {
-  const {isVisible, logs} = state;
-  const {type} = action;
-
-  if (type ===  'log') {
-    const args = action.payload;
-    const output = args.map(arg => _.isObject(arg) ? JSON.stringify(arg) : arg).join(' ') + "\n";
-    console.debug('logReducer:', output);
-    return {...state, logs: logs.concat(output)};
-  }
-
-  if (type ===  'toggle') {
-    return {...state, isVisible: !isVisible};
-  }
-  throw new Error(`unexpected type: ${type}`)
-}
-
-
-async function copyToClipboard(classifier) {
-  const d = classifier.getClassifierDataset();
-  const tensors = await Promise.all(Object.keys(d).map(id => d[id].array()));
-  const json = JSON.stringify(Object.keys(d).map((id, index) => {
-    return {id, data: tensors[index]};
-  }));
-
-  const text = `
-    <!-- Load TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <!-- see https://github.com/tensorflow/tfjs-models/tree/master/universal-sentence-encoder -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder"></script>
-    <!-- see https://github.com/tensorflow/tfjs-models/tree/master/knn-classifier -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier"></script>
-
-    <script id="tiny-trainer-copied-data" type="application/json">${json}</script>
-    <script>
-      (function() {
-        function loadClassifier() {
-          console.log('Loading classifier...');
-          const json = JSON.parse(document.querySelector('#tiny-trainer-copied-data').innerHTML);
-          const classifier = knnClassifier.create();
-          const dataset = json.reduce((map, {id,data}) => {
-            return {...map, [id]: tf.tensor(data)};
-          }, {});
-          console.log('dataset', dataset);
-          classifier.setClassifierDataset(dataset);
-          return classifier;
-        }
-
-        var classifier = null;
-        var modelPromise = null;
-        window.predict = function prediction(text) {
-          classifier || (classifier = loadClassifier());
-          if (!modelPromise) {
-            console.log('Loading language model...');
-            modelPromise = use.load();
-          }
-
-          console.log('Waiting for language model...');
-          return modelPromise.then(model => {
-            console.log('Embedding...');
-            return model.embed([text]).then(embeddings => {
-              console.log('embeddings', embeddings);
-              console.log('Predicting...');
-              return classifier.predictClass(embeddings);
-            });
-          });
-        }
-      })();
-    </script>
-  `;
-  clipboardCopy(text);
-  console.log(text);
 }

@@ -5,7 +5,7 @@ import _ from 'lodash';
 
 
 export function loadModel() {
-  return use.load();  
+  return use.load();
 }
 
 // Returns a 2D tensor consisting of the 512-dimensional embeddings for each sentence.
