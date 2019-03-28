@@ -13,7 +13,6 @@ import {updatedList} from './patch';
 import './App.css';
 import Spinner from './Spinner';
 import ProjectIngredients from './ProjectIngredients';
-import BoxEmbedding from './BoxEmbedding';
 import LabelBucket from './LabelBucket';
 import SelectFeed from './SelectFeed';
 import Peek from './Peek';
@@ -161,7 +160,6 @@ export default function App() {
               setLabels={setLabels}
               examplesMap={examplesMap}
               setExamplesMap={setExamplesMap}
-              languageModel={languageModel}
             />
           ))}
         </div>
@@ -249,7 +247,6 @@ export default function App() {
                   })}
                 </div>
               </div>
-              <BoxEmbedding embedding={result.embedding} />
             </div>
           ))}
           <div className="App-ingredients"><ProjectIngredients /></div>
