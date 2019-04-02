@@ -19,7 +19,8 @@ import Peek from './Peek';
 
 
 export default function App() {
-  if (window.location.pathname.indexOf('/peek') === 0) return <Peek />;
+  const [peek] = useQueryParam('peek', StringParam);
+  if (peek) return <Peek />;
 
   const {showLogs, logs, log, toggleShowLog} = useLog({showLogs: false});
   const [labels, setLabels] = useState([]);
