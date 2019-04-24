@@ -41,6 +41,7 @@ export default function LabelBucket(props) {
       <div className="App-examples">
         {examples.map(example => (
           <div
+            key={example.id}
             className="App-example">
             <textarea
               className="App-example-textarea"
@@ -50,7 +51,7 @@ export default function LabelBucket(props) {
               onChange={e => {
                 setExamplesMap({
                   ...examplesMap,
-                  [label.id]: updatedRecords(examples, example.id, {text: example.text})
+                  [label.id]: updatedRecords(examples, example.id, {text: e.target.value})
                 })
               }}
             />
